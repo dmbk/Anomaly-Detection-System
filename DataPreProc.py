@@ -2,13 +2,7 @@ from os import listdir
 from os.path import isfile, join, isdir
 import numpy as np
 from PIL import Image
-import Config
 
-import matplotlib.pyplot as plt
-import argparse
-
-# Instantiate the parser
-parser = argparse.ArgumentParser(description='Vidasa Extended -- Anomaly Detection System')
 
 
 def get_clips_by_stride(stride, frames_list, sequence_size):
@@ -28,11 +22,11 @@ def get_clips_by_stride(stride, frames_list, sequence_size):
     """
     clips = []
     sz = len(frames_list)
-    clip = np.zeros(shape=(sequence_size, 256, 256))
+    clip = np.zeros(shape=(sequence_size, 256, 256, 1))
     cnt = 0
     for start in range(0, stride):
         for i in range(start, sz, stride):
-            clip[cnt, :, :] = frames_list[i]
+            clip[cnt, :, :, 0] = frames_list[i]
             cnt = cnt + 1
             if cnt == sequence_size:
                 clips.append(clip)
@@ -57,7 +51,8 @@ def get_training_set(conf):
                 img_path = join(directory_path, c)
                 if str(img_path)[-3:] == "tif":
                     img = Image.open(img_path).resize((256, 256))
-                  #  img = np.array(img, dtype=np.float32) / 256.0
+
+                    img = np.array(img, dtype=np.float32) / 256.0
                     all_frames.append(img)
             # get the 10-frames sequences from the list of images after applying data augmentation
             for stride in range(1, 3):
@@ -65,25 +60,18 @@ def get_training_set(conf):
     return clips
 
 
-def TEST_get_training_set(conf):
-    print("Starting")
-    clips =  get_training_set(conf)
-    print("Total clips: %d" % len(clips))
-    for clip in clips:
-        print("Sequence size: %d" % len(clip))
-        for image in clip:
-            plt.imshow(np.uint8(image))
-            plt.show()
 
 
+def get_single_test(conf):
+    sz = 200
+    test = np.zeros(shape=(sz, 256, 256, 1))
+    cnt = 0
+    for f in sorted(listdir(conf.SINGLE_TEST_PATH)):
+        if str(join(conf.SINGLE_TEST_PATH, f))[-3:] == "tif":
+            img = Image.open(join(conf.SINGLE_TEST_PATH, f)).resize((256, 256))
+            img = np.array(img, dtype=np.float32) / 256.0
+            test[cnt, :, :, 0] = img
+            cnt = cnt + 1
+    return test
 
-
-
-parser.add_argument('--data',type=str,
-                    help='Data directory path')
-
-args = parser.parse_args()
-
-conf = Config.Config(data_dir=args.data)
-TEST_get_training_set(conf)
 
